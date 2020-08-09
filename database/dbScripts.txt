@@ -1,0 +1,287 @@
+Database Queries
+Database Information:
+Instance ID: sse202
+DB name:  CarRental
+Endpoint: **********
+Username: admin
+Password: *******
+Port: 3306
+
+
+Tables:
+
+users (Registration Page)
+CREATE TABLE `CarRental`.`users` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `first_name` VARCHAR(225) NOT NULL,
+  `last_name` VARCHAR(225) NOT NULL,
+  `age` INT NOT NULL,
+  `LicenseID` INT NOT NULL,
+  `Address` VARCHAR(225) NOT NULL,
+  `RegisterationDate` DATE NOT NULL,
+  `MembershipExpirationDate` DATE NOT NULL,
+  `CardPayment` INT NOT NULL,
+  `email` VARCHAR(225) NOT NULL,
+  `password` VARCHAR(225) NOT NULL,
+  PRIMARY KEY (`id`));
+ 
+dmv_verify
+CREATE TABLE `CarRental`.`dmv_verify` (
+  `dmv_id` INT NOT NULL AUTO_INCREMENT,
+  `first_name` VARCHAR(225) NOT NULL,
+  `last_name` VARCHAR(225) NOT NULL,
+  `license_id` INT NOT NULL,
+  `address` VARCHAR(225) NOT NULL,
+  PRIMARY KEY (`dmv_id`));
+
+VehicleDetails
+
+CREATE TABLE CarRental.VehicleDetails(
+VehicleNumber INT NOT NULL AUTO_INCREMENT,
+VehicalType VARCHAR(50) NOT NULL,
+VehicalPicture VARCHAR(255) NOT NULL,
+HrRentalPrice INT NOT NULL,
+RentalLocationName VARCHAR(255) NOT NULL,
+RentalAddress VARCHAR(255) NOT NULL,
+RentalVehicalCapacity INT NOT NULL,
+VehicleModel VARCHAR(150) NOT NULL,
+VehicleYear INT NOT NULL,
+RegistrationTag VARCHAR(50) NOT NULL,
+CurrentMileage FLOAT NOT NULL,
+LastServicedDate DATE NOT NULL,
+VehicleCondition VARCHAR(50) NOT NULL,
+PRIMARY KEY (VehicleNumber)
+)
+
+TerminatedUsers
+
+CREATE TABLE CarRental.TerminatedUsers(
+  first_name VARCHAR(225) NOT NULL,
+  last_name VARCHAR(225) NOT NULL,
+  age INT NOT NULL,
+  LicenseID INT NOT NULL,
+  Address VARCHAR(225) NOT NULL,
+  RegisterationDate DATE NOT NULL,
+  MembershipExpirationDate DATE NOT NULL,
+  CardPayment INT NOT NULL,
+  email VARCHAR(225) NOT NULL,
+  TerminatedDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
+
+BookingDetails
+
+CREATE TABLE CarRental.BookingDetail(
+BookingID INT NOT NULL AUTO_INCREMENT,
+VehicleNumber INT NOT NULL,
+Start DATETIME NOT NULL,
+End DATETIME NOT NULL,
+UserEmailID NVARCHAR(255) NOT NULL,
+RentalCost DOUBLE NOT NULL,
+OneHourRental DOUBLE NOT NULL,
+LateReturnFee DOUBLE NOT NULL,
+VehicalCondition NVARCHAR(255) NOT NULL,
+PRIMARY KEY(BookingID),
+FOREIGN KEY (VehicleNumber)
+      REFERENCES VehicleDetails(VehicleNumber)
+);
+
+
+Admin Features
+Query to fetch data to show in UI
+select * from CarRental.VehicleDetails
+
+Query to add a new vehicle detail in table by admin through UI
+INSERT INTO CarRental.VehicleDetails 
+(VehicalType, VehicalPicture, HrRentalPrice, RentalLocationName, RentalAddress, RentalVehicalCapacity,
+VehicleModel, VehicleYear, RegistrationTag, CurrentMileage, LastServicedDate, VehicleCondition) VALUES 
+('Small Car','Elantra.jpg',10,'City Hall Garage','45 S 6th St, San Jose, CA 95113','5',
+'Hyndai Elantra SE', '2019', 'Mar 2020',12.5,'2019-08-12','Good')
+
+Query to delete any vehicle detail from the table by admin through UI. pass the VehicleNumber in the query.
+DELETE FROM CarRental.VehicleDetails where VehicleNumber = ''
+
+Query to modify/update any vehicle detail in the table by admin through UI based on VehicleNumber (Primary Key).
+UPDATE CarRental.VehicleDetails
+SET VehicleCondition = 'Excellent'
+Where VehicleNumber = '1'
+
+show databases;
+use CarRental;
+show tables;
+select * from users;
+select * from VehicleDetails;
+select * from TerminatedUsers;
+
+CALL SearchCar('Hy','');
+CALL SearchCar('ford','city');
+
+SHOW CREATE PROCEDURE SearchCar;
+
+
+Sample: Query to search car on the basis of Car model and location
+SELECT * FROM CarRental.VehicleDetails 
+        WHERE RentalLocationName LIKE '%' AND VehicleModel LIKE '%';
+
+Stored procedure to search car
+DELIMITER $$
+CREATE PROCEDURE SearchCar (
+	 IN CarModel NVARCHAR(150),
+    In Location nvarchar(255)
+)
+BEGIN
+	If Location = '' OR Location IS NULL THEN
+		SELECT * FROM CarRental.VehicleDetails WHERE VehicleModel LIKE CONCAT('%',CarModel,'%');
+	ELSEIF CarModel = '' OR CarModel IS NULL THEN
+		SELECT * FROM CarRental.VehicleDetails WHERE RentalLocationName LIKE CONCAT('%',Location,'%');
+	ELSE
+		SELECT * FROM CarRental.VehicleDetails 
+        WHERE RentalLocationName LIKE CONCAT('%',Location,'%') AND VehicleModel LIKE CONCAT('%',CarModel,'%');
+	END IF;
+
+END$$
+
+DELIMITER ;
+
+
+
+Call Stored procedure by passing parameters: Car Model and Location
+CALL SearchCar(‘Hyn’,’’)
+CALL SearchCar(‘’,’city’)
+CALL SearchCAr(‘Hon’,’City Hall’)
+
+Fetch all the user data for administrator except admin detail
+select * from CarRental.users Where email != 'admin@cloud.com'
+
+Sample: Insert a new record in Users table
+INSERT INTO users(first_name,last_name,age,LicenseID,Address,RegisterationDate,MembershipExpirationDate,CardPayment,email,password)
+VALUES('test','Terminate','20','6738947','33rd South 3rd Street','2020-03-31','2020-03-29','2147483647','testTerminate@gmail.com','$2a$10$4sxYeWMndPAcL7NUapO4AevrfYOBNzVhoAGRyGf4x1HucAv.QNkB2')
+
+Stored Procedure to Handle Terminate User
+DELIMITER $$
+CREATE PROCEDURE TerminateUserSP (
+	IN emailId NVARCHAR(225)
+)
+BEGIN
+	INSERT INTO TerminatedUsers (first_name,last_name,age,LicenseID,Address,RegisterationDate,MembershipExpirationDate,CardPayment,email)
+	SELECT first_name,last_name,age,LicenseID,Address,RegisterationDate,MembershipExpirationDate,CardPayment,email
+	FROM users WHERE email = emailId;
+    
+    DELETE FROM CarRental.users where email = emailId;
+
+END$$
+
+DELIMITER ;
+
+Call Stored procedure to Terminate User by passing email ID as a parameter
+	CALL TerminateUserSP('emailID')
+
+
+
+User Features
+
+Sample: 
+INSERT INTO BookingDetail(VehicleNumber,Start,End,UserEmailID,RentalCost)
+VALUES(5,'2020-04-12 07:00:00','2020-04-13 07:00:00','test2Terminate@gmail.com','360')
+
+
+
+
+
+Syntax to call the function
+
+SELECT BookCar(7,'2020-04-18 06:00:00','2020-05-18 11:00:00','test2Terminate@gmail.com',100,20,0,5,'Excellent');
+
+
+Call “SimilarCars” Stored procedure by passing vehicle number as a parameter
+
+CALL similarCars(7);
+
+
+-	The user should be able to cancel an existing reservation up to one hour ahead of the scheduled pickup time. Otherwise, a minimum charge of one-hour rental should be applied.
+
+	If cancel time 1 hr ahead of start time: 
+		Then update the VehicleBooking table by passing the BookingId:
+		UPDATE CarRental.BookingDetail SET Cancelled = 1, RentalCost = 0 WHERE BookingID = 3;
+	Else 
+		Show pop up as “Booking can not be cancelled”
+
+
+#SELECT * FROM CarRental.BookingDetail where VehicleNumber=1  and Start<='2020-04-20 07:31:40' and End >='2020-04-21 03:31:40'
+SELECT * FROM CarRental.BookingDetail where VehicleNumber=1  and Start>='2020-04-12 05:31:40' and End <='2020-04-21 13:31:40'
+#SELECT * FROM CarRental.BookingDetail where VehicleNumber=1  and Start<='2020-04-19 06:46:21' and End >='2020-04-19 06:46:21'
+#SELECT * FROM CarRental.BookingDetail where VehicleNumber=1  and Start<='2020-04-20 07:31:40' and End >='2020-04-20 07:31:40'
+
+/*
+*/
+
+
+
+CREATE DEFINER=`admin`@`%` PROCEDURE `CarBooking`(
+in var_VehicleNumber int,
+in var_Start datetime,
+in var_End datetime,
+in var_UserEmailID varchar(255),
+in var_RentalCost double,
+in var_OneHourRental double,
+in var_LateReturnFee double,
+in var_numberOfHours double,
+in var_VehicalCondition varchar(255)
+)
+BEGIN
+declare sum int;
+IF ( EXISTS (SELECT * FROM CarRental.BookingDetail where VehicleNumber=var_VehicleNumber and Start<=var_Start
+    and End>=var_End)) THEN
+	set sum= 1; /*car not available. Show similar cars available at diff location*/
+	select sum;
+
+elseif ( EXISTS (SELECT * FROM CarRental.BookingDetail where VehicleNumber=var_VehicleNumber and Start>=var_Start
+    and End<=var_End)) THEN
+	set sum= 2;
+    select sum;
+
+elseif ( EXISTS (SELECT * FROM CarRental.BookingDetail where VehicleNumber=var_VehicleNumber and Start<=var_Start
+    and End>=var_Start)) THEN
+	set sum= 3;
+    select sum;
+
+    elseif ( EXISTS (SELECT * FROM CarRental.BookingDetail where VehicleNumber=var_VehicleNumber and Start<=var_End
+    and End>=var_End)) THEN
+	set sum= 4;
+    select sum;
+
+ELSE
+INSERT INTO CarRental.BookingDetail (VehicleNumber,Start,End,UserEmailID,RentalCost,OneHourRental,LateReturnFee,
+numberOfHours,VehicalCondition) VALUES (var_VehicleNumber,var_Start,var_End,var_UserEmailID,var_RentalCost,var_OneHourRental,
+var_LateReturnFee,var_numberOfHours,var_VehicalCondition);
+
+        set sum= 5;
+		select sum;
+ /*Car available to book + successfully booking done*/
+      
+    END IF;
+
+   
+END
+
+
+
+
+
+
+
+Stored Procedure to find similar cars
+
+CREATE DEFINER=`admin`@`%` PROCEDURE `SimilarCars`(
+in var_vehicleNumber int
+)
+BEGIN
+		SELECT RentalLocationName FROM CarRental.VehicleDetails WHERE VehicleNumber !=var_vehicleNumber AND VehicleModel IN
+            (SELECT VehicleModel FROM CarRental.VehicleDetails WHERE VehicleNumber=var_vehicleNumber)
+            AND RentalLocationName NOT IN (SELECT RentalLocationName FROM CarRental.VehicleDetails 
+            WHERE VehicleNumber=var_vehicleNumber);		   
+END
+
+
+
+

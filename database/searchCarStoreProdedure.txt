@@ -1,0 +1,15 @@
+CREATE DEFINER=`admin`@`%` PROCEDURE `SearchCar`(
+IN CarModel NVARCHAR(150),
+    In Location nvarchar(255)
+)
+BEGIN
+If Location = '' OR Location IS NULL THEN
+SELECT * FROM CarRental.VehicleDetails WHERE VehicleModel LIKE CONCAT('%',CarModel,'%');
+ELSEIF CarModel = '' OR CarModel IS NULL THEN
+SELECT * FROM CarRental.VehicleDetails WHERE RentalLocationName LIKE CONCAT('%',Location,'%');
+ELSE
+SELECT * FROM CarRental.VehicleDetails
+        WHERE RentalLocationName LIKE CONCAT('%',Location,'%') AND VehicleModel LIKE CONCAT('%',CarModel,'%');
+END IF;
+
+END
